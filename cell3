@@ -1,0 +1,6 @@
+from google.colab import drive
+import os
+drive.mount('/content/drive')
+os.makedirs('/content/drive/MyDrive/movies', exist_ok=True)
+os.makedirs('/content/drive/MyDrive/movies_done', exist_ok=True)
+print("movies in Drive:", [f for f in os.listdir('/content/drive/MyDrive/movies')])
