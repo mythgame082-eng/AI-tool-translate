@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="km" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khmer AI Dubbing Tool</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Kantumruuy+Pro:wght@300;400;600;700&family=Noto+Sans+Khmer:wght@400;600&display=swap" rel="stylesheet">
+<style type="text/tailwindcss">
+@layer components{
+  .card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4}
+  .btn{@apply px-4 py-2.5 rounded-xl text-xs font-bold transition bg-amber-500 hover:bg-amber-400 text-slate-950}
+  .btn2{@apply px-4 py-2.5 rounded-xl text-xs bg-slate-800 hover:bg-slate-700 text-slate-100}
+  .btn3{@apply px-5 py-2.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white}
+  .inp{@apply w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-blue-500 focus:outline-none}
+  .tbl{@apply max-h-96 overflow-y-auto border border-slate-800 rounded-xl bg-slate-950}
+}
+body{font-family:'Kantumruuy Pro','Noto Sans Khmer',sans-serif;background:#020617;color:#f1f5f9}
+</style>
+</head>
+<body class="min-h-screen">
+<header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-50 px-4 py-3">
+  <h1 class="text-lg font-bold bg-gradient-to-r from-red-400 via-amber-300 to-yellow-400 bg-clip-text text-transparent">🎬 រឿងភាគចិន/អង់គ្លេស → ខ្មែរ AI Dubbing</h1>
+</header>
+
+<main class="max-w-6xl mx-auto px-3 sm:px-6 py-5 space-y-4">
+  <div class="card">
+    <label class="text-xs text-slate-400">Backend URL (ចម្លងពី Colab ក្រោយដំណើរការ Cell 2)</label>
+    <input id="backend" class="inp" placeholder="https://xxxx.trycloudflare.com">
+  </div>
+
+  <nav id="nav" class="flex overflow-x-auto gap-2 p-2 bg-slate-900 rounded-2xl border border-slate-800 text-xs"></nav>
+
+  <!-- 1 -->
+  <section class="panel card" id="s1">
+    <h2 class="font-bold text-sm">១. វីដេអូ</h2>
+    <input type="file" id="vf" accept="video/*" class="inp">
+    <p class="text-xs text-slate-400">ឬ វាយឈ្មោះឯកសារក្នុង Colab (ឧ. movie.mp4 នៅ /content ឬ drive/MyDrive/movies/m01.mp4)៖</p>
+    <input id="cname" class="inp" placeholder="movie.mp4">
+    <button class="btn" onclick="useVideo()">យកវីដេអូនេះ</button>
+    <div id="p1" class="hidden space-y-1"><div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div id="b1" class="h-full bg-green-500 w-0"></div></div><div id="m1" class="text-xs text-slate-400"></div></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="panel card hidden" id="s2">
+    <div class="flex flex-wrap gap-2 justify-between items-center"><h2 class="font-bold text-sm">២. ទាញអត្ថបទ (Whisper ពិត)</h2>
+      <div class="flex flex-wrap gap-2 items-center">
+        <select id="lang" class="inp" style="width:auto">
+          <option value="auto">ភាសាដើម៖ ស្វ័យប្រវត្តិ</option>
+          <option value="zh">ចិន</option>
+          <option value="en">អង់គ្លេស</option>
+        </select>
+        <button class="btn2" onclick="exportZh()">ទាញយក .srt ដើម</button>
+        <button class="btn" onclick="stt()">ចាប់ផ្តើម</button>
+      </div></div>
+    <div id="p2" class="hidden space-y-1"><div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div id="b2" class="h-full bg-amber-500 w-0"></div></div><div id="m2" class="text-xs text-slate-400"></div></div>
+    <div class="tbl"><table class="w-full text-xs"><tbody id="zb"><tr><td class="p-4 text-center text-slate-500">មិនទាន់មានអត្ថបទ</td></tr></tbody></table></div>
+  </section>
+
+  <!-- 3 -->
+  <section class="panel card hidden" id="s3">
+    <div class="flex flex-wrap gap-2 justify-between items-center"><h2 class="font-bold text-sm">៣. បកប្រែជាខ្មែរ និងកែសម្រួល</h2>
+      <div class="flex flex-wrap gap-2">
+        <button class="btn" onclick="tr()">បកប្រែស្វ័យប្រវត្តិ</button>
+        <label class="btn2 cursor-pointer">នាំចូល .srt<input type="file" class="hidden" onchange="importSrt(this.files[0]);this.value=''"></label>
+        <button class="btn2" onclick="exportSrt()">ទាញយក .srt ខ្មែរ</button>
+      </div></div>
+    <div id="p3" class="hidden space-y-1"><div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div id="b3" class="h-full bg-blue-500 w-0"></div></div><div id="m3" class="text-xs text-slate-400"></div></div>
+    <div class="tbl"><table class="w-full text-xs"><tbody id="kb" class="divide-y divide-slate-800/60"><tr><td class="p-4 text-center text-slate-500">ធ្វើជំហានទី ២ ឬនាំចូល .srt</td></tr></tbody></table></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="panel card hidden" id="s4">
+    <h2 class="font-bold text-sm">៤. សំឡេង AI</h2>
+    <label class="text-xs text-slate-400">សំឡេងលំនាំដើម (ប្រើសម្រាប់បន្ទាត់ដែលមិនទាន់កំណត់ ប្រុស/ស្រី)៖</label>
+    <select id="voice" class="inp"><option value="female">ស្រីមុំ (Sreymom)</option><option value="male">ពិសិដ្ឋ (Piseth)</option></select>
+    <button class="btn2" onclick="detect()">🔍 រកសំឡេងប្រុស/ស្រី ស្វ័យប្រវត្តិ (ពីសំឡេងដើម)</button>
+    <div id="p4" class="hidden space-y-1"><div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div id="b4" class="h-full bg-blue-500 w-0"></div></div><div id="m4" class="text-xs text-slate-400"></div></div>
+    <div id="gc" class="text-xs text-slate-400">ក្នុងជំហាន ៣ អ្នកអាចកែប្រុស/ស្រី ម្តងមួយបន្ទាត់បាន។</div>
+    <label class="text-xs text-slate-400">សំឡេងដើម៖ <b id="ov">15%</b></label>
+    <input id="orig" type="range" min="0" max="100" value="15" class="w-full" oninput="$('ov').textContent=this.value+'%'">
+    <label class="text-xs text-slate-400">សំឡេងខ្មែរ៖ <b id="kv">300%</b></label>
+    <input id="kvol" type="range" min="100" max="600" step="50" value="300" class="w-full" oninput="$('kv').textContent=this.value+'%'">
+    <label class="text-xs text-slate-400">ល្បឿនអានសំឡេងខ្មែរ៖ <b id="sv">+15%</b></label>
+    <input id="speed" type="range" min="0" max="50" value="15" class="w-full" oninput="$('sv').textContent='+'+this.value+'%'">
+    <button class="btn" onclick="prev()">សាកល្បងសំឡេង (3 ឃ្លាដំបូង)</button>
+    <div id="pv" class="space-y-2"></div>
+  </section>
+
+  <!-- 5 -->
+  <section class="panel card hidden text-center" id="s5">
+    <h2 class="font-bold text-sm">៥. បញ្ចូលសំឡេងខ្មែរពេញរឿង</h2>
+    <button class="btn" onclick="dub()">បង្កើតវីដេអូចុងក្រោយ</button>
+    <div id="p5" class="hidden space-y-1 text-left"><div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div id="b5" class="h-full bg-red-500 w-0"></div></div><div id="m5" class="text-xs text-slate-400"></div></div>
+    <video id="rv" controls playsinline class="w-full rounded-xl bg-black hidden"></video>
+    <a id="dl" class="hidden btn3 inline-block" target="_blank" rel="noopener">⬇️ ទាញយកវីដេអូ</a>
+    <p class="text-xs text-slate-500">បើវីដេអូមិនចាក់ក្នុងទំព័រ សូមចុចប៊ូតុងទាញយកដោយផ្ទាល់។</p>
+  </section>
+
+  <!-- 6 BATCH -->
+  <section class="panel card hidden" id="s6">
+    <div class="flex flex-wrap gap-2 justify-between items-center">
+      <h2 class="font-bold text-sm">៦. ច្រើនភាពយន្តស្វ័យប្រវត្តិ (ពីថត movies ក្នុង Drive)</h2>
+      <button class="btn2" onclick="bList()">🔄 ទាញបញ្ជី</button>
+    </div>
+    <p class="text-xs text-slate-400">ធ្វើគ្រប់ជំហានដោយស្វ័យប្រវត្តិ៖ ស្គាល់ភាសា → បកប្រែខ្មែរ → សំឡេង → dubbing → ដាក់ក្នុងថត movies_done។ ការងារនៅលើ Colab ដូច្នេះអាច refresh ឬចាក់សោទូរស័ព្ទបាន។</p>
+    <div class="flex gap-2 text-xs">
+      <button class="btn2" onclick="bAll(true)">ជ្រើសទាំងអស់</button>
+      <button class="btn2" onclick="bAll(false)">ដកទាំងអស់</button>
+    </div>
+    <div id="bl" class="tbl"><div class="p-4 text-center text-xs text-slate-500">ចុច 🔄 ទាញបញ្ជី</div></div>
+
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div><label class="text-xs text-slate-400">ភាសាដើម</label>
+        <select id="bln" class="inp"><option value="auto">ស្វ័យប្រវត្តិ</option><option value="zh">ចិន</option><option value="en">អង់គ្លេស</option></select></div>
+      <div><label class="text-xs text-slate-400">សំឡេងលំនាំដើម</label>
+        <select id="bv" class="inp"><option value="female">ស្រីមុំ (Sreymom)</option><option value="male">ពិសិដ្ឋ (Piseth)</option></select></div>
+    </div>
+    <label class="flex items-center gap-2 text-xs text-slate-300"><input id="bd" type="checkbox" checked> រកសំឡេងប្រុស/ស្រី ស្វ័យប្រវត្តិ (ប៉ាន់ស្មាន)</label>
+    <label class="text-xs text-slate-400">សំឡេងដើម៖ <b id="bov">15%</b></label>
+    <input id="bo" type="range" min="0" max="100" value="15" class="w-full" oninput="$('bov').textContent=this.value+'%'">
+    <label class="text-xs text-slate-400">សំឡេងខ្មែរ៖ <b id="bkv">300%</b></label>
+    <input id="bk" type="range" min="100" max="600" step="50" value="300" class="w-full" oninput="$('bkv').textContent=this.value+'%'">
+    <label class="text-xs text-slate-400">ល្បឿនអានសំឡេងខ្មែរ៖ <b id="bsv">+15%</b></label>
+    <input id="bs" type="range" min="0" max="50" value="15" class="w-full" oninput="$('bsv').textContent='+'+this.value+'%'">
+
+    <div class="flex gap-2">
+      <button class="btn" onclick="bStart()">▶ ចាប់ផ្តើម</button>
+      <button class="btn3" onclick="bStop()">■ បញ្ឈប់</button>
+    </div>
+    <div class="space-y-1">
+      <div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div id="bb" class="h-full bg-red-500 w-0"></div></div>
+      <div id="bm" class="text-xs text-slate-400">—</div>
+    </div>
+    <pre id="blg" class="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-60 overflow-auto whitespace-pre-wrap"></pre>
+  </section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let video=null, subs=[];
+$("backend").value="";
+try{$("backend").value=localStorage.getItem("be")||""}catch(e){}
+$("backend").onchange=()=>{try{localStorage.setItem("be",$("backend").value.trim())}catch(e){}};
+const base=()=>$("backend").value.trim().replace(/\/$/,"");
+const api=(p,o={})=>fetch(base()+p,o);
+const clock=s=>new Date(s*1000).toISOString().substr(11,12).replace(".",",");
+const sec=t=>{const m=t.match(/(\d+):(\d+):(\d+)[,.](\d+)/);return m?Number(m[1])*3600+Number(m[2])*60+Number(m[3])+Number("0."+m[4]):0};
+
+// navigation
+const titles=["១ វីដេអូ","២ អត្ថបទដើម","៣ បកប្រែ","៤ សំឡេង","៥ ផលសម្រេច","៦ ច្រើនភាពយន្ត"];
+$("nav").innerHTML=titles.map((t,i)=>`<button id="n${i+1}" onclick="go(${i+1})" class="px-4 py-2 rounded-xl whitespace-nowrap"> ${t}</button>`).join("");
+function go(n){
+  document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));
+  $("s"+n).classList.remove("hidden");
+  titles.forEach((_,i)=>$("n"+(i+1)).className="px-4 py-2 rounded-xl whitespace-nowrap "+(i+1===n?"bg-red-600 text-white font-semibold":"text-slate-400 hover:bg-slate-800"));
+  if(n===2)renderZh(); if(n===3)renderKm();
+  if(n===6&&base()){bList();bWatch()}
+}
+go(1);
+
+function setP(n,p,m){$("p"+n).classList.remove("hidden");$("b"+n).style.width=p+"%";$("m"+n).textContent=m||""}
+const need=()=>{if(!base()){alert("សូមដាក់ Backend URL ជាមុន");return false}return true};
+
+const CHUNK=40*1024*1024;
+function sendChunk(blob,id,i,onProg){return new Promise((res,rej)=>{
+  const x=new XMLHttpRequest(); x.open("POST",base()+"/api/upload_chunk");
+  x.upload.onprogress=e=>onProg(e.loaded);
+  x.onload=()=>x.status<300?res():rej(new Error("HTTP "+x.status));
+  x.onerror=()=>rej(new Error("network"));
+  x.ontimeout=()=>rej(new Error("timeout"));
+  const f=new FormData(); f.append("file",blob,"chunk"); f.append("upload_id",id); f.append("index",i); x.send(f);
+});}
+async function upload(file){
+  const total=Math.max(1,Math.ceil(file.size/CHUNK));
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  const ext=(file.name.match(/\.[a-zA-Z0-9]{1,5}$/)||[".mp4"])[0];
+  for(let i=0;i<total;i++){
+    const blob=file.slice(i*CHUNK,Math.min(file.size,(i+1)*CHUNK));
+    for(let t=0;;t++){
+      try{
+        await sendChunk(blob,id,i,l=>{const done=i*CHUNK+l;setP(1,done/file.size*100,`កំពុង upload ${Math.round(done/file.size*100)}% (${i+1}/${total}) — កុំចាក់សោអេក្រង់`)});
+        break;
+      }catch(e){
+        if(t>=5)throw new Error("Upload បរាជ័យនៅបំណែកទី "+(i+1)+": "+e.message);
+        setP(1,i/total*100,`ព្យាយាមម្តងទៀត បំណែកទី ${i+1} (${t+1}/5)...`); await sleep(2000*(t+1));
+      }
+    }
+  }
+  setP(1,99,"កំពុងផ្សំបំណែក...");
+  const f=new FormData(); f.append("upload_id",id); f.append("total",total); f.append("ext",ext);
+  const r=await api("/api/upload_done",{method:"POST",body:f});
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+
+async function runJob(path,form,n){
+  const r=await api(path,{method:"POST",body:form});
+  if(!r.ok)throw new Error(await r.text());
+  const {job_id}=await r.json();
+  for(;;){
+    await sleep(2000);
+    const j=await(await api("/api/job/"+job_id)).json();
+    setP(n,j.progress,j.message);
+    if(j.status==="done")return j.result;
+    if(j.status==="error")throw new Error(j.message);
+  }
+}
+
+async function useVideo(){
+  if(!need())return;
+  try{
+    const f=$("vf").files[0], nm=$("cname").value.trim();
+    if(f)video=(await upload(f)).video; else if(nm)video=nm; else return alert("ជ្រើសវីដេអូ ឬវាយឈ្មោះឯកសារ");
+    setP(1,100,"រួចរាល់៖ "+video);
+  }catch(e){alert("កំហុស៖ "+e.message)}
+}
+
+async function stt(){
+  if(!need())return; if(!video)return alert("ធ្វើជំហានទី ១ ជាមុន");
+  const f=new FormData(); f.append("video",video); f.append("language",$("lang").value);
+  try{subs=await runJob("/api/transcribe",f,2); renderZh(); alert("បានអត្ថបទ "+subs.length+" ឃ្លា")}catch(e){alert("កំហុស៖ "+e.message)}
+}
+function renderZh(){
+  $("zb").innerHTML=subs.length?subs.map((s,i)=>`<tr><td class="p-2">${i+1}</td><td class="p-2 text-amber-400 font-mono">${s.time}</td><td class="p-2 whitespace-nowrap">${s.gender==="male"?"🔵 ប្រុស":s.gender==="female"?"🔴 ស្រី":"—"}</td><td class="p-2">${esc(s.chinese)}</td></tr>`).join(""):'<tr><td class="p-4 text-center text-slate-500">មិនទាន់មានអត្ថបទ</td></tr>';
+}
+
+async function tr(){
+  if(!need())return;
+  const idx=subs.map((s,i)=>i).filter(i=>subs[i].chinese);
+  if(!idx.length)return alert("គ្មានអត្ថបទសម្រាប់បកប្រែ");
+  const f=new FormData(); f.append("texts_json",JSON.stringify(idx.map(i=>subs[i].chinese)));
+  try{const r=await runJob("/api/translate",f,3); idx.forEach((i,k)=>subs[i].khmer=r[k]); renderKm()}catch(e){alert("កំហុស៖ "+e.message)}
+}
+function renderKm(){
+  $("kb").innerHTML=subs.length?subs.map((s,i)=>`<tr><td class="p-2 space-y-1" style="border-left:4px solid ${s.gender==='male'?'#3b82f6':s.gender==='female'?'#ec4899':'transparent'}"><div class="text-xs"><span class="text-slate-500">${i+1}</span> <span class="text-amber-400 font-mono">${s.time}</span> <select data-g="${i}" class="inp" style="width:auto;padding:2px 6px"><option value="">—</option><option value="male" ${s.gender==="male"?"selected":""}>ប្រុស</option><option value="female" ${s.gender==="female"?"selected":""}>ស្រី</option></select></div><div class="text-slate-400">${esc(s.chinese)}</div><input class="inp" data-i="${i}" value="${esc(s.khmer)}"></td></tr>`).join(""):'<tr><td class="p-4 text-center text-slate-500">ធ្វើជំហានទី ២ ឬនាំចូល .srt</td></tr>';
+}
+$("kb").oninput=e=>{const i=e.target.dataset.i; if(i!==undefined)subs[i].khmer=e.target.value};
+$("kb").onchange=e=>{const g=e.target.dataset.g; if(g!==undefined){subs[g].gender=e.target.value;count();e.target.closest("td").style.borderLeft="4px solid "+(e.target.value==="male"?"#3b82f6":e.target.value==="female"?"#ec4899":"transparent")}};
+function count(){
+  const m=subs.filter(s=>s.gender==="male").length, f=subs.filter(s=>s.gender==="female").length;
+  $("gc").textContent=`ប្រុស ${m} · ស្រី ${f} · មិនទាន់កំណត់ ${subs.length-m-f} (ប្រើសំឡេងលំនាំដើម)`;
+}
+async function detect(){
+  if(!need())return; if(!video)return alert("ធ្វើជំហានទី ១ ជាមុន (វីដេអូ)"); if(!subs.length)return alert("នាំចូល .srt ជាមុន");
+  const f=new FormData(); f.append("video",video); f.append("segs_json",JSON.stringify(subs.map(s=>[s.start,s.end])));
+  try{const r=await runJob("/api/detect_gender",f,4); r.forEach((g,i)=>{if(g&&subs[i])subs[i].gender=g}); renderKm(); renderZh(); count(); alert("រកឃើញរួច។ សូមពិនិត្យ និងកែក្នុងជំហាន ៣ បើមានខុស។")}catch(e){alert("កំហុស៖ "+e.message)}
+}
+
+function importSrt(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const txt=String(r.result), cues=[];
+    txt.replace(/^\uFEFF/,"").replace(/\r/g,"").trim().split(/\n{2,}/).forEach(b=>{
+      const l=b.split("\n"), i=l.findIndex(x=>x.includes("-->")); if(i<0)return;
+      const [a,c]=l[i].split("-->"), t=l.slice(i+1).join(" ").replace(/<[^>]+>/g,"").trim();
+      if(t)cues.push({start:sec(a),end:sec(c),t});
+    });
+    const km=/[\u1780-\u17FF]/.test(txt);
+    if(subs.length===cues.length){cues.forEach((c,i)=>{if(km)subs[i].khmer=c.t; else subs[i].chinese=c.t})}
+    else subs=cues.map((c,i)=>({id:i+1,start:c.start,end:c.end,time:clock(c.start)+" - "+clock(c.end),chinese:km?"":c.t,khmer:km?c.t:""}));
+    renderKm();
+    alert("នាំចូលបាន "+cues.length+" ឃ្លា");
+  };
+  r.readAsText(file,"utf-8");
+}
+function saveSrt(field,name){
+  const t=subs.filter(s=>s[field]).map((s,i)=>`${i+1}\n${clock(s.start)} --> ${clock(s.end)}\n${s[field]}\n`).join("\n");
+  if(!t)return alert("មិនទាន់មានអក្សរ");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"})); a.download=name; a.click();
+}
+const exportSrt=()=>saveSrt("khmer","movie.km.srt"), exportZh=()=>saveSrt("chinese","movie.src.srt");
+
+async function prev(){
+  if(!need())return;
+  const lines=subs.filter(s=>s.khmer).slice(0,3).map(s=>({t:s.khmer,g:s.gender||$("voice").value})); if(!lines.length)lines.push({t:"សួស្តី នេះគឺជាសំឡេងសាកល្បង",g:$("voice").value});
+  $("pv").innerHTML="";
+  for(const {t,g} of lines){
+    const f=new FormData(); f.append("text",t); f.append("gender",g); f.append("speech_rate",$("speed").value);
+    const r=await api("/api/tts-preview",{method:"POST",body:f});
+    if(!r.ok){alert("មានបញ្ហាបង្កើតសំឡេង");return}
+    const d=document.createElement("div"); d.className="p-2 bg-slate-950 rounded flex justify-between items-center gap-2";
+    d.innerHTML=`<span class="text-xs">${esc(t)}</span><audio controls class="h-8" src="${URL.createObjectURL(await r.blob())}"></audio>`;
+    $("pv").appendChild(d);
+  }
+}
+
+async function dub(){
+  if(!need())return; if(!video||!subs.some(s=>s.khmer))return alert("ត្រូវការវីដេអូ និងអក្សរខ្មែរជាមុន");
+  const f=new FormData(); f.append("video",video);
+  f.append("subs_json",JSON.stringify(subs.map(({start,end,khmer,gender})=>({start,end,khmer,gender:gender||""}))));
+  f.append("gender",$("voice").value); f.append("original_volume",$("orig").value/100);
+  f.append("khmer_volume",$("kvol").value/100); f.append("speech_rate",$("speed").value);
+  try{
+    const r=await runJob("/api/dub",f,5), url=base()+"/api/download/"+r.file;
+    $("rv").src=url; $("rv").classList.remove("hidden"); $("dl").href=url; $("dl").classList.remove("hidden");
+    alert("រួចរាល់!");
+  }catch(e){alert("កំហុស៖ "+e.message)}
+}
+
+// ===== BATCH =====
+async function bList(){
+  if(!need())return;
+  try{
+    const j=await(await api("/api/drive_movies")).json();
+    if(!j.mounted){$("bl").innerHTML='<div class="p-4 text-xs text-red-400">Drive មិនទាន់ mount ឬគ្មានថត movies។ សូម run Cell 3 ក្នុង Colab</div>';return}
+    $("bl").innerHTML=j.files.length?j.files.map(f=>`<label class="flex items-center gap-2 p-2 text-xs border-b border-slate-800"><input type="checkbox" class="bchk" value="${esc(f.name)}" ${f.done?"":"checked"}><span class="flex-1 break-all">${esc(f.name)}</span><span class="text-slate-500">${f.mb} MB</span>${f.done?`<span class="text-green-400">✅</span><a class="text-amber-400 underline" target="_blank" rel="noopener" href="${base()}/api/batch_file/${encodeURIComponent(f.out)}">⬇️</a>`:""}</label>`).join(""):'<div class="p-4 text-xs text-slate-500">គ្មានភាពយន្តក្នុងថត movies</div>';
+  }catch(e){$("bl").innerHTML='<div class="p-4 text-xs text-red-400">ទាក់ទង backend មិនបាន៖ '+esc(e.message)+'</div>'}
+}
+function bAll(v){document.querySelectorAll(".bchk").forEach(c=>c.checked=v)}
+async function bStart(){
+  if(!need())return;
+  const files=[...document.querySelectorAll(".bchk:checked")].map(c=>c.value);
+  if(!files.length)return alert("សូមជ្រើសភាពយន្តជាមុន");
+  const f=new FormData();
+  f.append("files_json",JSON.stringify(files)); f.append("lang",$("bln").value); f.append("gender",$("bv").value);
+  f.append("detect",$("bd").checked?1:0); f.append("speech_rate",$("bs").value);
+  f.append("khmer_volume",$("bk").value/100); f.append("original_volume",$("bo").value/100);
+  try{
+    const r=await api("/api/batch_start",{method:"POST",body:f});
+    if(!r.ok){const t=await r.text();try{return alert("កំហុស៖ "+JSON.parse(t).detail)}catch(e){return alert("កំហុស៖ "+t)}}
+    bWatch();
+  }catch(e){alert("កំហុស៖ "+e.message)}
+}
+async function bStop(){
+  if(!need())return;
+  try{await api("/api/batch_stop",{method:"POST"});alert("បានសុំបញ្ឈប់ វានឹងឈប់ពេលចប់ដំណាក់កាលបច្ចុប្បន្ន")}catch(e){alert("កំហុស៖ "+e.message)}
+}
+let bW=false;
+async function bWatch(){
+  if(bW)return; bW=true; let miss=0;
+  try{
+    for(;;){
+      try{
+        const j=await(await api("/api/batch_status")).json(); miss=0;
+        const total=j.total||1, overall=Math.min(100,((Math.max(0,j.index-1))+(j.progress||0)/100)/total*100);
+        $("bb").style.width=(j.running?overall:(j.total?100:0))+"%";
+        const fails=Object.keys(j.failed||{}).length;
+        $("bm").textContent=(j.running?`កំពុងធ្វើ ${j.index}/${j.total}៖ ${j.current} — ${j.stage} ${j.progress||0}%`:(j.total?"ចប់/ឈប់":"—"))+` | រួច ${(j.ok||[]).length} · បរាជ័យ ${fails}`;
+        let log=(j.log||[]).join("\n");
+        if(fails)log+="\n\nបរាជ័យ៖\n"+Object.entries(j.failed).map(([k,v])=>k+": "+v).join("\n");
+        $("blg").textContent=log; $("blg").scrollTop=$("blg").scrollHeight;
+        if(!j.running){bList();break}
+      }catch(e){
+        if(++miss>=3){$("bm").textContent="ទាក់ទង backend មិនបាន (កំពុងព្យាយាម...)"}
+      }
+      await sleep(3000);
+    }
+  }finally{bW=false}
+}
+if(base()){bWatch()}
+</script>
+</body>
+</html>
